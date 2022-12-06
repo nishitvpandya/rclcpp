@@ -94,6 +94,7 @@ set(${PROJECT_NAME}_SRCS
   src/rclcpp/qos.cpp
   src/rclcpp/qos_event.cpp
   src/rclcpp/qos_overriding_options.cpp
+  src/rclcpp/runtime_type_subscription.cpp
   src/rclcpp/serialization.cpp
   src/rclcpp/serialized_message.cpp
   src/rclcpp/service.cpp
