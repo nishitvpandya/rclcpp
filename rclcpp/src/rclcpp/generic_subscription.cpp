@@ -25,6 +25,12 @@
 namespace rclcpp
 {
 
+SerializedMessage difc_decrypt(
+    const SerializedMessage & msg,
+    const std::function<std::vector<unsigned char>(const std::string &)> data_function = [](const std::string & topic)
+    {(void)topic; return std::vector<unsigned char>();}    
+);
+
 std::shared_ptr<void> GenericSubscription::create_message()
 {
   return create_serialized_message();
@@ -48,7 +54,8 @@ GenericSubscription::handle_serialized_message(
   const std::shared_ptr<rclcpp::SerializedMessage> & message,
   const rclcpp::MessageInfo &)
 {
-  callback_(message);
+  auto a = std::make_shared<rclcpp::SerializedMessage>(difc_decrypt(*message));
+  callback_(a);
 }
 
 void GenericSubscription::handle_loaned_message(

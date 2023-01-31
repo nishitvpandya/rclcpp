@@ -470,6 +470,7 @@ protected:
   void
   do_serialized_publish(const rcl_serialized_message_t * serialized_msg)
   {
+
     if (intra_process_is_enabled_) {
       // TODO(Karsten1987): support serialized message passed by intraprocess
       throw std::runtime_error("storing serialized messages in intra process is not supported yet");
