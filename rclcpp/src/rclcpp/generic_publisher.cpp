@@ -17,14 +17,21 @@
 
 #include <memory>
 #include <string>
-
 namespace rclcpp
 {
 
+SerializedMessage difc_encrypt(
+    const SerializedMessage & msg,
+    const std::string & topic,
+    const std::function<std::vector<unsigned char>(const std::string &)> data_function = [](const std::string & topic)
+    {(void)topic; return std::vector<unsigned char>();} 
+);
+
 void GenericPublisher::publish(const rclcpp::SerializedMessage & message)
 {
+  auto encrypted_message = difc_encrypt(message, this -> get_topic_name());
   auto return_code = rcl_publish_serialized_message(
-    get_publisher_handle().get(), &message.get_rcl_serialized_message(), NULL);
+    get_publisher_handle().get(), &encrypted_message.get_rcl_serialized_message(), NULL);
 
   if (return_code != RCL_RET_OK) {
     rclcpp::exceptions::throw_from_rcl_error(return_code, "failed to publish serialized message");

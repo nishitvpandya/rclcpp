@@ -20,6 +20,8 @@ find_package(rosidl_typesupport_c REQUIRED)
 find_package(rosidl_typesupport_cpp REQUIRED)
 find_package(statistics_msgs REQUIRED)
 find_package(tracetools REQUIRED)
+find_package(dmaabe REQUIRED)
+find_package(difc_interfaces REQUIRED)
 
 # TODO(wjwwood): remove this when gtest can build on its own, when using target_compile_features()
 # Default to C++17
@@ -108,6 +110,7 @@ set(${PROJECT_NAME}_SRCS
   src/rclcpp/utilities.cpp
   src/rclcpp/wait_set_policies/detail/write_preferring_read_write_lock.cpp
   src/rclcpp/waitable.cpp
+  src/rclcpp/difc.cpp
 )
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
@@ -204,6 +207,9 @@ ament_target_dependencies(${PROJECT_NAME}
   "rosidl_runtime_cpp"
   "statistics_msgs"
   "tracetools"
+  "difc_interfaces"
+  "dmaabe"
+  "rmw"
 )
 
 # Causes the visibility macros to use dllexport rather than dllimport,
@@ -239,6 +245,8 @@ ament_export_dependencies(rosidl_runtime_cpp)
 ament_export_dependencies(rcl_yaml_param_parser)
 ament_export_dependencies(statistics_msgs)
 ament_export_dependencies(tracetools)
+ament_export_dependencies(difc_interfaces)
+ament_export_dependencies(dmaabe)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

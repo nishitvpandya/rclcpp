@@ -26,9 +26,96 @@
 
 #include "rcl/error_handling.h"
 #include "rcl/rcl.h"
+#include "rcl/init_options.h"
+#include "rmw/init_options.h"
+
+#include "rcl/arguments.h"
+#include "rcl/log_level.h"
+#include "rcl_yaml_param_parser/types.h"
+
+#include "rcl/allocator.h"
+#include "rcl/macros.h"
+#include "rcl/remap.h"
+#include "rcl/types.h"
+#include "rcl/visibility_control.h"
+
+
+#include <iostream>
+
+// #include "rmw/init.h"
+
+
+struct rcl_arguments_impl_s
+{
+  /// Array of indices to unknown ROS specific arguments.
+  int * unparsed_ros_args;
+  /// Length of unparsed_ros_args.
+  int num_unparsed_ros_args;
+
+  /// Array of indices to non-ROS arguments.
+  int * unparsed_args;
+  /// Length of unparsed_args.
+  int num_unparsed_args;
+
+  /// Parameter override rules parsed from arguments.
+  rcl_params_t * parameter_overrides;
+
+  /// Array of yaml parameter file paths
+  char ** parameter_files;
+  /// Length of parameter_files.
+  int num_param_files_args;
+
+  /// Array of rules for name remapping.
+  rcl_remap_t * remap_rules;
+  /// Length of remap_rules.
+  int num_remap_rules;
+
+  /// Log levels parsed from arguments.
+  rcl_log_levels_t log_levels;
+  /// A file used to configure the external logging library
+  char * external_log_config_file;
+  /// A boolean value indicating if the standard out handler should be used for log output
+  bool log_stdout_disabled;
+  /// A boolean value indicating if the rosout topic handler should be used for log output
+  bool log_rosout_disabled;
+  /// A boolean value indicating if the external lib handler should be used for log output
+  bool log_ext_lib_disabled;
+
+  /// Enclave to be used.
+  char * enclave;
+
+  /// Allocator used to allocate objects in this struct
+  rcl_allocator_t allocator;
+};
+typedef enum rcl_remap_type_t
+{
+  RCL_UNKNOWN_REMAP = 0,
+  RCL_TOPIC_REMAP = 1u << 0,
+  RCL_SERVICE_REMAP = 1u << 1,
+  RCL_NODENAME_REMAP = 1u << 2,
+  RCL_NAMESPACE_REMAP = 1u << 3
+} rcl_remap_type_t;
+
+struct rcl_remap_impl_s
+{
+  /// Bitmask indicating what type of rule this is.
+  rcl_remap_type_t type;
+  /// A node name that this rule is limited to, or NULL if it applies to any node.
+  char * node_name;
+  /// Match portion of a rule, or NULL if node name or namespace replacement.
+  char * match;
+  /// Replacement portion of a rule.
+  char * replacement;
+
+  /// Allocator used to allocate objects in this struct
+  rcl_allocator_t allocator;
+};
+
 
 namespace rclcpp
 {
+
+void difc_init(const std::string & self_enclave_name);
 
 void
 init(
@@ -41,6 +128,16 @@ init(
   get_global_default_context()->init(argc, argv, init_options);
   // Install the signal handlers.
   install_signal_handlers(signal_handler_options);
+  std::string self_enclave_name_checked;
+  try {
+    std::string self_enclave_name_temp = rclcpp::contexts::get_global_default_context() -> get_rcl_context() -> global_arguments.impl -> enclave;
+    std::string self_enclave_name(self_enclave_name_temp.begin() + 1, self_enclave_name_temp.end());
+    self_enclave_name_checked = self_enclave_name;
+  } catch(...)
+  {
+    self_enclave_name_checked = "";
+  }
+  difc_init(self_enclave_name_checked);
 }
 
 bool
