@@ -22,9 +22,7 @@ namespace rclcpp
 
 SerializedMessage difc_encrypt(
     const SerializedMessage & msg,
-    const std::string & topic,
-    const std::function<std::vector<unsigned char>(const std::string &)> data_function = [](const std::string & topic)
-    {(void)topic; return std::vector<unsigned char>();} 
+    const std::string & topic
 );
 
 void GenericPublisher::publish(const rclcpp::SerializedMessage & message)
