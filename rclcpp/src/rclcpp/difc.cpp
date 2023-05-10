@@ -26,12 +26,12 @@
 
 using namespace std::chrono_literals;
 
-static inline uint64_t rdtsc()
-{
-    uint32_t lo, hi;
-    __asm__ __volatile__("rdtsc" : "=a" (lo), "=d" (hi));
-    return ((uint64_t)hi << 32) | lo;
-}
+// static inline uint64_t rdtsc()
+// {
+//     uint32_t lo, hi;
+//     __asm__ __volatile__("rdtsc" : "=a" (lo), "=d" (hi));
+//     return ((uint64_t)hi << 32) | lo;
+// }
 
 namespace rclcpp
 {
@@ -143,34 +143,43 @@ class ProcessDIFCManager {
         void
         report_to_os(const SignedOSReportKey & os_report_key)
         {
-            // Take the const std::vector & signed_key, send it to the verification daemon as follows.
-            // 1. The verification daemon is a ROS2 service with name "/verifier" or something like that.
-            // You can choose the name as you wish as long as it is the same everywhere.
-            // 2. The signed_key parameter passed to this function will be sent as the body of the request
-            // 3. The request code can be anything you want as long as it matches on both sides.
-            // 
-            // On the /verifier daemon, the verifier will receive the signed_key in the body of the request,
-            // then deserialize it using the convert_from_vector function (defined above) into a SignedSentKey
-            // (also defined above).
-            // It will verify the signature of the SignedSentKey (.signature)
-            // If the signature verifies correctly, it will deserialize the .sent_key field using the convert_from_vector
-            // function again into a SentKey (defined above)
-            // It will then look at the SentKey::declassify field obtained above and if the bool is true, it will
-            // do nothing.
-            // If the bool is false, it will look at the SentKey::enc_key, serialize it into a vector of unsigned char/
-            // string and paste it into the address space of the pid mentioned in the SentKey::pid field.
-            // 
 
-            dmaabe::PtrWithLen* current_last = keys_ptr + *num_keys_ptr;      
-            std::string val_str(os_report_key.key.ser_enc_key.begin(), os_report_key.key.ser_enc_key.end());
-            std::memcpy(last_location, val_str.c_str(), val_str.size());
-            *current_last ={
-                .len = val_str.size(),
-                .ptr = last_location 
-            };
-            last_location += val_str.size() + 1;
-            ++*num_keys_ptr;
+            // dmaabe::PtrWithLen* current_last = keys_ptr + *num_keys_ptr;      
+            // std::string val_str(os_report_key.key.ser_enc_key.begin(), os_report_key.key.ser_enc_key.end());
+            // std::memcpy(last_location, val_str.c_str(), val_str.size());
+            // *current_last ={
+            //     .len = val_str.size(),
+            //     .ptr = last_location 
+            // };
+            // last_location += val_str.size() + 1;
+            // ++*num_keys_ptr;
+
+            auto difc_requester_node = std::make_shared<rclcpp::Node>("pid_" + pid + "_verifierclient");
+            auto service_client = difc_requester_node.get() -> create_client<difc_interfaces::srv::DIFCRequest>("/verifier");
+            auto req_ptr = std::make_shared<difc_interfaces::srv::DIFCRequest::Request>();
+            req_ptr -> req_type = 0x00;
+            req_ptr -> request = dmaabe::convert_to_vector(os_report_key);
+            while (!service_client->wait_for_service(1s)) {
+                if (!rclcpp::ok()) {
+                    std::cout << "Interrupted while waiting for the service. Exiting." << std::endl;
+                    break;
+                }
+                std::cout << "service not available, waiting again..." << std::endl;
+            }
+            auto future_result = service_client -> async_send_request(req_ptr);
+            std::cout << "request sent to /verifier" << std::endl;
+            if(rclcpp::spin_until_future_complete(difc_requester_node, future_result) == rclcpp::FutureReturnCode::SUCCESS) {
+                auto res = future_result.get();
+                if(res -> response_status == 0) {
+                    std::cout << "Report successful" << std::endl;
+                }
+                else {
+                    std::cout << "Report not successful" << std::endl;
+                }
+            }
+
         }
+
         
 
     public:
