@@ -17,6 +17,7 @@
 
 #include <memory>
 #include <string>
+#include <cstdio>
 
 #include "rcl/subscription.h"
 
@@ -52,7 +53,9 @@ GenericSubscription::handle_serialized_message(
   const std::shared_ptr<rclcpp::SerializedMessage> & message,
   const rclcpp::MessageInfo &)
 {
+  printf("[PICAROS, PRE_DECRYPT]: message_num=%d", messages_recd++);
   auto a = std::make_shared<rclcpp::SerializedMessage>(difc_decrypt(*message));
+  printf("[PICAROS, POST_DECRYPT]: message_num=%d", messages_recd);
   callback_(a);
 }
 

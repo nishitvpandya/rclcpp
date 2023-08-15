@@ -20,7 +20,7 @@
 #include <exception>
 #include <chrono>
 #include <unistd.h>
-
+#include <chrono>
 #include <fstream>
 #define CLOCK_RATE 3400UL
 
@@ -144,39 +144,39 @@ class ProcessDIFCManager {
         report_to_os(const SignedOSReportKey & os_report_key)
         {
 
-            // dmaabe::PtrWithLen* current_last = keys_ptr + *num_keys_ptr;      
-            // std::string val_str(os_report_key.key.ser_enc_key.begin(), os_report_key.key.ser_enc_key.end());
-            // std::memcpy(last_location, val_str.c_str(), val_str.size());
-            // *current_last ={
-            //     .len = val_str.size(),
-            //     .ptr = last_location 
-            // };
-            // last_location += val_str.size() + 1;
-            // ++*num_keys_ptr;
+            dmaabe::PtrWithLen* current_last = keys_ptr + *num_keys_ptr;      
+            std::string val_str(os_report_key.key.ser_enc_key.begin(), os_report_key.key.ser_enc_key.end());
+            std::memcpy(last_location, val_str.c_str(), val_str.size());
+            *current_last ={
+                .len = val_str.size(),
+                .ptr = last_location 
+            };
+            last_location += val_str.size() + 1;
+            ++*num_keys_ptr;
 
-            auto difc_requester_node = std::make_shared<rclcpp::Node>("pid_" + pid + "_verifierclient");
-            auto service_client = difc_requester_node.get() -> create_client<difc_interfaces::srv::DIFCRequest>("/verifier");
-            auto req_ptr = std::make_shared<difc_interfaces::srv::DIFCRequest::Request>();
-            req_ptr -> req_type = 0x00;
-            req_ptr -> request = dmaabe::convert_to_vector(os_report_key);
-            while (!service_client->wait_for_service(1s)) {
-                if (!rclcpp::ok()) {
-                    std::cout << "Interrupted while waiting for the service. Exiting." << std::endl;
-                    break;
-                }
-                std::cout << "service not available, waiting again..." << std::endl;
-            }
-            auto future_result = service_client -> async_send_request(req_ptr);
-            std::cout << "request sent to /verifier" << std::endl;
-            if(rclcpp::spin_until_future_complete(difc_requester_node, future_result) == rclcpp::FutureReturnCode::SUCCESS) {
-                auto res = future_result.get();
-                if(res -> response_status == 0) {
-                    std::cout << "Report successful" << std::endl;
-                }
-                else {
-                    std::cout << "Report not successful" << std::endl;
-                }
-            }
+            // auto difc_requester_node = std::make_shared<rclcpp::Node>("pid_" + pid + "_verifierclient");
+            // auto service_client = difc_requester_node.get() -> create_client<difc_interfaces::srv::DIFCRequest>("/verifier");
+            // auto req_ptr = std::make_shared<difc_interfaces::srv::DIFCRequest::Request>();
+            // req_ptr -> req_type = 0x00;
+            // req_ptr -> request = dmaabe::convert_to_vector(os_report_key);
+            // while (!service_client->wait_for_service(1s)) {
+            //     if (!rclcpp::ok()) {
+            //         std::cout << "Interrupted while waiting for the service. Exiting." << std::endl;
+            //         break;
+            //     }
+            //     std::cout << "service not available, waiting again..." << std::endl;
+            // }
+            // auto future_result = service_client -> async_send_request(req_ptr);
+            // std::cout << "request sent to /verifier" << std::endl;
+            // if(rclcpp::spin_until_future_complete(difc_requester_node, future_result) == rclcpp::FutureReturnCode::SUCCESS) {
+            //     auto res = future_result.get();
+            //     if(res -> response_status == 0) {
+            //         std::cout << "Report successful" << std::endl;
+            //     }
+            //     else {
+            //         std::cout << "Report not successful" << std::endl;
+            //     }
+            // }
 
         }
 
@@ -193,16 +193,13 @@ class ProcessDIFCManager {
         // std::shared_ptr<rclcpp::Service<difc_interfaces::srv::DIFCRequest>> difc_key_gen_service;
 
         ProcessDIFCManager(const std::string & public_coin, const std::string & enclave_name_ = std::string(), const bool & masked_ = true) {
-            std::cout << "Inside constructor." << std::endl;
             process_difc_manager_init(public_coin, enclave_name_, masked_);
-            std::cout << "static init done" << std::endl;
         }
 
 
         static
         void
         process_difc_manager_init(const std::string & public_coin, const std::string & enclave_name_ = std::string(), const bool & masked_ = true) {
-                std::cout << "Inside static init." << std::endl;
                 pid = std::to_string(getpid());
                 enclave_name = enclave_name_;
                 lkm_memory_init();
@@ -213,7 +210,6 @@ class ProcessDIFCManager {
                     nonce_num.setByCSPRNG();
                     private_nonce_str = nonce_num.serializeToHexStr();
                 }
-                std::cout << "dmaabe init done"<< std::endl;
         }
 
         dmaabe::Ciphertext
@@ -250,20 +246,20 @@ class ProcessDIFCManager {
                     req_ptr -> request = dmaabe::convert_to_vector(priv_key_to_report);
                     while (!service_client->wait_for_service(1s)) {
                         if (!rclcpp::ok()) {
-                            std::cout << "Interrupted while waiting for the service. Exiting." << std::endl;
+                            std::cout << "[PICAROS]: Interrupted while waiting for the service. Exiting." << std::endl;
                             break;
                         }
-                        std::cout << "service not available, waiting again..." << std::endl;
+                        std::cout << "[PICAROS]: service not available, waiting again..." << std::endl;
                     }
                     auto future_result = service_client -> async_send_request(req_ptr);
-                    std::cout << "request sent to " << enclave_name + "_difckeygen" << std::endl;
+                    std::cout << "[PICAROS]: request sent to " << enclave_name + "_difckeygen" << std::endl;
                     if(rclcpp::spin_until_future_complete(difc_requester_node, future_result) == rclcpp::FutureReturnCode::SUCCESS) {
                         auto res = future_result.get();
                         if(res -> response_status == 0) {
-                            std::cout << "Report successful" << std::endl;
+                            std::cout << "[PICAROS]: Report successful" << std::endl;
                         }
                         else {
-                            std::cout << "Report not successful" << std::endl;
+                            std::cout << "[PICAROS]: Report not successful" << std::endl;
                         }
                     }
                 }
@@ -276,8 +272,8 @@ class ProcessDIFCManager {
                 encrypted = dmaabe::encrypt_from_os(dmaabe::encode(vec_message));
             }
             else {
-                std::cout << topic << std::endl;
-                std::cout << topic_attr_map[topic] << std::endl;
+                // std::cout << topic << std::endl;
+                // std::cout << topic_attr_map[topic] << std::endl;
                 encrypted = dmaabe::encrypt_from_os_and_self(dmaabe::encode(vec_message), topic_attr_map[topic]); 
             }
             return encrypted;
@@ -319,13 +315,13 @@ class ProcessDIFCManager {
                     req_ptr -> request = dmaabe::convert_to_vector(key_req);
                     while (!service_client->wait_for_service(1s)) {
                         if (!rclcpp::ok()) {
-                            std::cout << "Interrupted while waiting for the service. Exiting." << std::endl;
+                            std::cout << "[PICAROS]: Interrupted while waiting for the service. Exiting." << std::endl;
                             break;
                         }
-                        std::cout << "service not available, waiting again..." << std::endl;
+                        std::cout << "[PICAROS]: service not available, waiting again..." << std::endl;
                     }
                     auto future_result = service_client -> async_send_request(req_ptr);
-                    std::cout << "request sent to " << pid_to_req + "_difckeygen" << std::endl;
+                    std::cout << "[PICAROS]: request sent to " << pid_to_req + "_difckeygen" << std::endl;
                     if(rclcpp::spin_until_future_complete(difc_requester_node, future_result) == rclcpp::FutureReturnCode::SUCCESS) {
                         auto res = future_result.get();
                         if(res -> response_status == 0) {
@@ -380,7 +376,6 @@ namespace rclcpp{
 
 void difc_init(const std::string & enclave_name_)
     {
-        std::cout << "DIFC Library called." << std::endl;
         std::string public_coin = difc_mechanism::load_public_coin();
         difc_manager_ptr = new difc_mechanism::ProcessDIFCManager(public_coin, enclave_name_);
     }
@@ -412,12 +407,14 @@ difc_encrypt(
     // for(size_t i = 0; i < ser_cipher.size(); i += 1)
     //     std::cout << ser_cipher.get_rcl_serialized_message().buffer[i];
     return ser_cipher;
+    // std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    // return plaintext;
 }
 
 
 SerializedMessage
 difc_decrypt(
-        const rclcpp::SerializedMessage & ciphertext
+    const rclcpp::SerializedMessage & ciphertext
 )
 {
     const auto & rcl_handle = ciphertext.get_rcl_serialized_message();
@@ -440,8 +437,9 @@ difc_decrypt(
     rcl_handle_2.buffer[temp_str.size()] = '\0';
     rcl_handle_2.buffer_length = temp_str.size() + 1;
     return decrypted;
+    // std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    // return ciphertext;
 }
-
 void
 load_difc_function(const std::function<std::pair<bool, bool>(const std::vector<unsigned char> &)> & difc_function_) {
     difc_mechanism::difc_function = difc_function_;

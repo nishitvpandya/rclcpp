@@ -67,6 +67,9 @@ public:
    * subscription are `event_callbacks`, `use_default_callbacks`, `ignore_local_publications`, and
    * `%callback_group`.
    */
+
+  std::atomic<size_t> messages_recd;
+
   template<typename AllocatorT = std::allocator<void>>
   GenericSubscription(
     rclcpp::node_interfaces::NodeBaseInterface * node_base,
